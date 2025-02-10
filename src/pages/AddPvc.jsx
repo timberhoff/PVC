@@ -2,77 +2,84 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const AddPvc = () => {
-  const [pvcId, setPvcId] = useState("");
   const [length, setLength] = useState("");
   const [width, setWidth] = useState("");
-  const [condition, setCondition] = useState("good");
+  const [pvcId, setPvcId] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!pvcId || !length || !width) {
-      alert("Please fill in all fields!");
+  const handleGenerateId = async () => {
+    if (!length || !width) {
+      alert("Please enter both length and width!");
       return;
     }
 
-    navigate(`/confirm-pvc/${pvcId}`, { state: { pvcId, length, width, condition } });
+    const response = await fetch("http://localhost:5000/generate-pvc-id", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ length, width }),
+    });
+
+    const data = await response.json();
+    console.log("Generated PVC ID:", data.pvc_id); // Debugging line
+    setPvcId(data.pvc_id);
+  };
+
+  const handleSubmit = async () => {
+    if (!pvcId) return;
+
+    await fetch("http://localhost:5000/add-pvc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pvc_id: pvcId, length, width }),
+    });
+
+    navigate(`/add-condition/${pvcId}`);
   };
 
   return (
     <div style={{ textAlign: "center", marginTop: "10vh" }}>
       <h1>Add New PVC Cover</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Enter PVC ID"
-          value={pvcId}
-          onChange={(e) => setPvcId(e.target.value)}
-          style={{ padding: "10px", fontSize: "16px", marginBottom: "10px" }}
-        /><br />
 
-        <input
-          type="number"
-          placeholder="Length (m)"
-          value={length}
-          onChange={(e) => setLength(e.target.value)}
-          style={{ padding: "10px", fontSize: "16px", marginBottom: "10px" }}
-        /><br />
+      {!pvcId ? (
+        <>
+          <input
+            type="number"
+            placeholder="Length (m)"
+            value={length}
+            onChange={(e) => setLength(e.target.value)}
+            style={{ padding: "10px", fontSize: "16px", marginBottom: "10px" }}
+          /><br />
 
-        <input
-        type="text" // Using text to allow custom formatting
-        placeholder="Width (m)"
-        value={width}
-        onChange={(e) => {
-            let input = e.target.value.replace(/\./g, ""); // Remove existing dots
+          <input
+            type="number"
+            placeholder="Width (m)"
+            value={width}
+            onChange={(e) => setWidth(e.target.value)}
+            style={{ padding: "10px", fontSize: "16px", marginBottom: "10px" }}
+          /><br />
 
-            if (input.length > 1) {
-            input = input[0] + "." + input.slice(1); // Add dot after the first digit
-            }
+          <button 
+            onClick={handleGenerateId}
+            style={{ padding: "10px 20px", fontSize: "16px", marginTop: "10px" }}
+          >
+            Generate PVC ID
+          </button>
+        </>
+      ) : (
+        <>
+          <h2>Your PVC ID: <strong>{pvcId}</strong></h2>
+          <p style={{ color: "red", fontWeight: "bold" }}>
+            Write this ID onto that PVC!!!
+          </p>
 
-            setWidth(input);
-        }}
-        onBlur={() => {
-            if (width.endsWith(".")) {
-            setWidth(width.slice(0, -1)); // Remove trailing dot when leaving input
-            }
-        }}
-        style={{ padding: "10px", fontSize: "16px", marginBottom: "10px" }}
-        /><br />
-
-
-        <label>Condition:</label><br />
-        <select value={condition} onChange={(e) => setCondition(e.target.value)}>
-          <option value="very good">Very Good</option>
-          <option value="good">Good</option>
-          <option value="bad">Bad</option>
-          <option value="rubbish">Rubbish</option>
-        </select><br /><br />
-
-        <button type="submit" style={{ padding: "10px 20px", fontSize: "16px" }}>
-          Submit
-        </button>
-      </form>
+          <button 
+            onClick={handleSubmit}
+            style={{ padding: "10px 20px", fontSize: "16px", marginTop: "20px" }}
+          >
+            CONTINUE
+          </button>
+        </>
+      )}
     </div>
   );
 };
