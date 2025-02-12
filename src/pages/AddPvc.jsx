@@ -13,16 +13,25 @@ const AddPvc = () => {
       return;
     }
 
-    const response = await fetch("http://localhost:5000/generate-pvc-id", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ length, width }),
-    });
+    try {
+      const response = await fetch("http://localhost:5000/generate-pvc-id", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ length, width }),
+      });
 
-    const data = await response.json();
-    console.log("Generated PVC ID:", data.pvc_id); // Debugging line
-    setPvcId(data.pvc_id);
-  };
+      if (!response.ok) {
+        throw new Error("Server response was not OK");
+      }
+
+      const data = await response.json();
+      setPvcId(data.pvc_id);
+    } catch (error) {
+      console.error("Failed to fetch PVC ID:", error);
+      alert("Failed to generate PVC ID. Check console for details.");
+    }
+};
+
 
   const handleSubmit = async () => {
     if (!pvcId) return;
